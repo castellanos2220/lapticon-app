@@ -1,0 +1,125 @@
+rules_version = '2';
+
+// Lapticon — reglas de Cloud Firestore (base (default) del proyecto lapticon-eba31).
+//
+// Colecciones:
+//   encargos/{idRender}                datos extra del envío (descripción, tamaño, fecha límite, precio)
+//   matches/{encargoId}_{travelerId}   interés del viajero → match cuando el remitente acepta
+//   matches/{id}/messages/{msgId}      chat: SOLO existe cuando el match está en estado 'match'
+//
+// Estas reglas se ejecutan en el servidor de Firebase: aunque alguien modifique
+// la app, no puede leer chats ajenos, escribir en un chat sin match, aceptarse a
+// sí mismo como viajero ni cambiar el precio de un encargo ajeno.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function encargoDoc(id) { return get(/databases/$(database)/documents/encargos/$(id)).data; }
+    function matchAfter(id) { return getAfter(/databases/$(database)/documents/matches/$(id)).data; }
+
+    // ------------------------------------------------------------------ encargos
+    match /encargos/{encargoId} {
+      // Cualquier usuario con sesión puede leer encargos (la app solo los muestra
+      // a viajeros con vuelo compatible; ver README, sección "Limitaciones").
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.senderId == uid()
+        && request.resource.data.estado == 'publicado'
+        && request.resource.data.matchId == null
+        && request.resource.data.travelerId == null
+        && request.resource.data.precio is number && request.resource.data.precio > 0
+        && request.resource.data.pesoKg is number && request.resource.data.pesoKg > 0 && request.resource.data.pesoKg <= 23
+        && request.resource.data.descripcion is string && request.resource.data.descripcion.size() <= 500
+        && request.resource.data.fechaLimite is string && request.resource.data.fechaLimite.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.ciudadOrigen is string && request.resource.data.ciudadDestino is string
+        && request.resource.data.origenKey != request.resource.data.destinoKey
+        && request.resource.data.moneda in ['USD', 'COP'];
+
+      allow update: if signedIn() && resource.data.senderId == uid() && (
+        // Cancelar mientras busca viajero
+        (resource.data.estado == 'publicado' && request.resource.data.estado == 'cancelado'
+          && changed().hasOnly(['estado', 'updatedAt']))
+        // Asignar: solo junto con aceptar el match correspondiente (misma transacción)
+        || (resource.data.estado == 'publicado' && request.resource.data.estado == 'asignado'
+          && changed().hasOnly(['estado', 'matchId', 'travelerId', 'updatedAt'])
+          && matchAfter(request.resource.data.matchId).encargoId == encargoId
+          && matchAfter(request.resource.data.matchId).estado == 'match'
+          && matchAfter(request.resource.data.matchId).travelerId == request.resource.data.travelerId)
+        // Marcar como entregado
+        || (resource.data.estado == 'asignado' && request.resource.data.estado == 'entregado'
+          && changed().hasOnly(['estado', 'updatedAt']))
+      );
+
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------------------ matches
+    match /matches/{matchId} {
+      function participa() { return signedIn() && uid() in resource.data.participants; }
+
+      allow read: if participa();
+
+      // El viajero muestra interés en un encargo abierto ajeno.
+      allow create: if signedIn()
+        && request.resource.data.travelerId == uid()
+        && matchId == request.resource.data.encargoId + '_' + uid()
+        && request.resource.data.estado == 'interesado'
+        && request.resource.data.senderId != uid()
+        && request.resource.data.participants == [request.resource.data.senderId, uid()]
+        && encargoDoc(request.resource.data.encargoId).estado == 'publicado'
+        && encargoDoc(request.resource.data.encargoId).senderId == request.resource.data.senderId
+        && request.resource.data.precio == encargoDoc(request.resource.data.encargoId).precio;
+
+      allow update: if participa()
+        // Campos de identidad inmutables
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.encargoId == resource.data.encargoId
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.travelerId == resource.data.travelerId
+        && request.resource.data.precio == resource.data.precio
+        && (
+          // Remitente acepta: el encargo debe quedar asignado a este match en la misma transacción
+          (uid() == resource.data.senderId && resource.data.estado == 'interesado' && request.resource.data.estado == 'match'
+            && changed().hasOnly(['estado', 'updatedAt'])
+            && getAfter(/databases/$(database)/documents/encargos/$(resource.data.encargoId)).data.matchId == matchId)
+          // Remitente descarta
+          || (uid() == resource.data.senderId && resource.data.estado == 'interesado' && request.resource.data.estado == 'rechazado'
+            && changed().hasOnly(['estado', 'updatedAt']))
+          // Viajero retira su interés
+          || (uid() == resource.data.travelerId && resource.data.estado == 'interesado' && request.resource.data.estado == 'retirado'
+            && changed().hasOnly(['estado', 'updatedAt']))
+          // Metadatos del chat (último mensaje y lecturas), solo con match
+          || (resource.data.estado == 'match' && request.resource.data.estado == 'match'
+            && changed().hasOnly(['lastMessage', 'lastSenderId', 'lastMessageAt', 'readAt', 'updatedAt'])
+            && (!('lastSenderId' in changed()) || request.resource.data.lastSenderId == uid()))
+        );
+
+      allow delete: if false;
+
+      // ---------------------------------------------------------------- chat
+      match /messages/{msgId} {
+        function m() { return get(/databases/$(database)/documents/matches/$(matchId)).data; }
+
+        allow read: if signedIn() && uid() in m().participants && m().estado == 'match';
+
+        allow create: if signedIn()
+          && uid() in m().participants
+          && m().estado == 'match'
+          && request.resource.data.keys().hasOnly(['senderId', 'text', 'createdAt'])
+          && request.resource.data.senderId == uid()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time;
+
+        allow update, delete: if false;
+      }
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

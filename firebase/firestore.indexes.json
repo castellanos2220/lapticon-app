@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participants", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "encargos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "senderId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "encargos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "origenKey", "order": "ASCENDING" },
+        { "fieldPath": "destinoKey", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
