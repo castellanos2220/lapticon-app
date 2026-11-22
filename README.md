@@ -147,4 +147,4 @@ test/matching_test.dart           pruebas de la lógica de compatibilidad
 - **La compatibilidad la filtra la app.** El vuelo del viajero vive en el backend de Render, así que Firestore no puede comprobar en el servidor que el vuelo coincide. Para blindarlo hay que agregar al backend una ruta tipo `GET /api/encomiendas/compatibles`.
 - El backend permite **un viaje activo a la vez**.
 - Render (plan gratuito) se "duerme": la primera petición del día puede tardar hasta un minuto. La app lo avisa con un mensaje.
-- Las notificaciones push quedan para una fase siguiente. Dentro de la app, los contadores se actualizan en tiempo real.
+- Las notificaciones de push quedan para una fase siguiente. Dentro de la app, los contadores se actualizan en tiempo real.
