@@ -54,3 +54,4 @@ build_log.txt
 
 # Salidas de Gradle
 /android/build/
+/android/.kotlin/
