@@ -49,7 +49,7 @@ La app manda el *ID token* de Firebase como `Bearer` en cada petición al backen
 ### Pasos
 
 ```powershell
-git clone <URL-DEL-REPOSITORIO>
+git clone <github.com/castellanos2220/lapticon-app>
 cd lapticon
 flutter pub get
 flutter test                 # pruebas de la lógica de compatibilidad
