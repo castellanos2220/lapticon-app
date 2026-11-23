@@ -179,11 +179,20 @@ class EncargoCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(
               children: [
-                EncargoStatusChip(e.estado),
-                if (demo) ...[const SizedBox(width: 6), const DemoBadge()],
-                const Spacer(),
-                if (e.abierto && interesados > 0)
-                  StatusChip('$interesados ${interesados == 1 ? 'interesado' : 'interesados'}', color: AppColors.warning, icon: Icons.person_search_rounded),
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [EncargoStatusChip(e.estado), if (demo) const DemoBadge()],
+                  ),
+                ),
+                if (e.abierto && interesados > 0) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: StatusChip('$interesados ${interesados == 1 ? 'interesado' : 'interesados'}', color: AppColors.warning, icon: Icons.person_search_rounded),
+                  ),
+                ],
               ],
             ),
           ),

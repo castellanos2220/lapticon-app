@@ -27,10 +27,15 @@ Future<void> showDemoEncargo(
           children: [
             Row(
               children: [
-                const DemoBadge(),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [const DemoBadge(), EncargoStatusChip(e.estado)],
+                  ),
+                ),
                 const SizedBox(width: 8),
-                EncargoStatusChip(e.estado),
-                const Spacer(),
                 PriceTag(e.precio, e.moneda, caption: comoViajero ? 'Te pagan' : 'Pagas', large: true),
               ],
             ),

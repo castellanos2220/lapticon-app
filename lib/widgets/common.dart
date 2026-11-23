@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../format.dart';
@@ -178,7 +177,9 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[Icon(icon, size: 14, color: color), const SizedBox(width: 4)],
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+          ),
         ],
       ),
     );
@@ -284,9 +285,13 @@ class FlightCodeChip extends StatelessWidget {
         children: [
           Icon(Icons.flight_rounded, size: large ? 18 : 14, color: AppColors.sky),
           const SizedBox(width: 5),
-          Text(
-            code.isEmpty ? '—' : code,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: large ? 16 : 13, fontFamily: 'monospace'),
+          Flexible(
+            child: Text(
+              code.isEmpty ? '—' : code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: large ? 16 : 13, fontFamily: 'monospace'),
+            ),
           ),
         ],
       ),

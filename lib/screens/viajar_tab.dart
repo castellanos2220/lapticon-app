@@ -227,9 +227,14 @@ class FlightTicket extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('PASE DE ABORDAR', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontWeight: FontWeight.w800, letterSpacing: 1.6, fontSize: 11)),
-              const Spacer(),
-              FlightCodeChip(v.numeroVuelo, large: true),
+              Expanded(
+                child: Text('PASE DE ABORDAR',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontWeight: FontWeight.w800, letterSpacing: 1.6, fontSize: 11)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(child: FlightCodeChip(v.numeroVuelo, large: true)),
             ],
           ),
           const SizedBox(height: 16),

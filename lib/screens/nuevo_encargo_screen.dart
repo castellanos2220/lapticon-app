@@ -51,7 +51,8 @@ class _NuevoEncargoScreenState extends State<NuevoEncargoScreen> {
   void initState() {
     super.initState();
     LapticonApi.instance.ciudades().then((c) {
-      if (mounted) setState(() {
+      if (!mounted) return;
+      setState(() {
         _ciudades = c;
         _cargandoCiudades = false;
       });
