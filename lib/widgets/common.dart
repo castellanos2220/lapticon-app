@@ -43,7 +43,7 @@ String errorText(Object e) {
       case 'unavailable':
         return 'Sin conexión con la base de datos. Revisa tu internet.';
       case 'failed-precondition':
-        return 'Falta un índice en Firestore. Revisa la guía (paso de índices).';
+        return 'La base de datos rechazó la consulta. Actualiza la app e inténtalo de nuevo.';
       case 'not-found':
         return 'No se encontró el elemento.';
       default:
@@ -111,11 +111,14 @@ class SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(18);
+    final radius = BorderRadius.circular(22);
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: const [BoxShadow(color: Color(0x0F0B1D39), blurRadius: 18, offset: Offset(0, 6))],
+        boxShadow: const [
+          BoxShadow(color: Color(0x140B1D39), blurRadius: 24, offset: Offset(0, 10)),
+          BoxShadow(color: Color(0x080B1D39), blurRadius: 4, offset: Offset(0, 1)),
+        ],
       ),
       child: Material(
         color: color,
@@ -142,13 +145,15 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 12),
       child: Row(
         children: [
+          Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.royal, borderRadius: BorderRadius.circular(4))),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              text.toUpperCase(),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: AppColors.muted),
+              text,
+              style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, letterSpacing: -0.2, color: AppColors.navy),
             ),
           ),
           if (trailing != null) trailing!,
@@ -269,7 +274,11 @@ class FlightCodeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: large ? 12 : 9, vertical: large ? 7 : 4),
-      decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [AppColors.navy, AppColors.navyLight]),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -297,7 +306,15 @@ class Avatar extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.18), shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.12)],
+        ),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
       child: Text(iniciales(name), style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.navy, fontSize: size * 0.36)),
     );
   }
@@ -368,13 +385,17 @@ class EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 84,
-            height: 84,
-            decoration: const BoxDecoration(color: AppColors.skySoft, shape: BoxShape.circle),
-            child: Icon(icon, size: 38, color: AppColors.navyLight),
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(colors: [AppColors.navy, AppColors.navyLight], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              boxShadow: [BoxShadow(color: AppColors.royal.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 10))],
+            ),
+            child: Icon(icon, size: 38, color: AppColors.sky),
           ),
           const SizedBox(height: 18),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.navy)),
+          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: -0.3)),
           const SizedBox(height: 6),
           Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, height: 1.4)),
           if (action != null) ...[const SizedBox(height: 20), action!],

@@ -38,11 +38,13 @@ class LapticonStore {
   // ------------------------------------------------------------- encargos
   Future<void> crearEncargo(Encargo e) => _encargos.doc(e.id).set(e.toCreateMap());
 
+  /// Sin orderBy en la consulta: así no depende de un índice compuesto en
+  /// Firestore (error "failed-precondition"). Se ordena en el teléfono.
   Stream<List<Encargo>> misEncargos() => _encargos
       .where('senderId', isEqualTo: uid)
-      .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((s) => s.docs.map(Encargo.fromDoc).toList());
+      .map((s) => s.docs.map(Encargo.fromDoc).toList()
+        ..sort((a, b) => (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000))));
 
   Stream<Encargo?> encargo(String id) => _encargos.doc(id).snapshots().map((s) => s.exists ? Encargo.fromDoc(s) : null);
 
@@ -89,11 +91,12 @@ class LapticonStore {
 
   // ------------------------------------------------------------- matches
   /// Todos los matches donde participo (como remitente o viajero), más recientes primero.
+  /// También sin orderBy (no requiere índice compuesto); se ordena en el teléfono.
   Stream<List<MatchDoc>> misMatches() => _matches
       .where('participants', arrayContains: uid)
-      .orderBy('updatedAt', descending: true)
       .snapshots()
-      .map((s) => s.docs.map(MatchDoc.fromDoc).toList());
+      .map((s) => s.docs.map(MatchDoc.fromDoc).toList()
+        ..sort((a, b) => (b.updatedAt ?? DateTime(2000)).compareTo(a.updatedAt ?? DateTime(2000))));
 
   static String matchIdFor(String encargoId, String travelerId) => '${encargoId}_$travelerId';
 

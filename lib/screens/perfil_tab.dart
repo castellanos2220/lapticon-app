@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../config.dart';
 import '../services/api.dart';
+import '../services/role.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/immersive.dart';
 
 class PerfilTab extends StatefulWidget {
   const PerfilTab({super.key});
@@ -31,38 +33,28 @@ class _PerfilTabState extends State<PerfilTab> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    return Scaffold(
-      appBar: lapAppBar('Perfil'),
-      body: FutureBuilder<Map<String, dynamic>?>(
+    return FutureBuilder<Map<String, dynamic>?>(
         future: _perfil,
         builder: (context, snap) {
           final p = snap.data;
           final nombre = p == null
               ? (user?.displayName ?? 'Tu perfil')
               : '${p['nombre'] ?? ''} ${p['apellido'] ?? ''}'.trim();
-          return RefreshIndicator(
-            onRefresh: () async => _recargar(),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          return ValueListenableBuilder<AppRole?>(
+            valueListenable: RoleController.instance,
+            builder: (context, role, _) => ImmersivePage(
+              onRefresh: () async => _recargar(),
+              contentPadding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+              header: HeroHeader(
+                eyebrow: 'Tu cuenta',
+                title: nombre.isEmpty ? 'Sin nombre' : nombre,
+                subtitle: user?.email ?? '',
+                seed: 8,
+                trailing: Avatar(nombre.isEmpty ? (user?.email ?? '?') : nombre, size: 64, color: AppColors.sky),
+                child: role == null ? null : _RolActual(role: role),
+              ),
               children: [
-                SurfaceCard(
-                  child: Row(
-                    children: [
-                      Avatar(nombre.isEmpty ? (user?.email ?? '?') : nombre, size: 60),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(nombre.isEmpty ? 'Sin nombre' : nombre, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: AppColors.navy)),
-                            const SizedBox(height: 2),
-                            Text(user?.email ?? '', style: const TextStyle(color: AppColors.muted)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                if (role != null) _CambiarRol(role: role),
                 const SizedBox(height: 12),
                 if (snap.connectionState == ConnectionState.waiting)
                   const Padding(padding: EdgeInsets.all(16), child: LinearProgressIndicator(color: AppColors.sky))
@@ -124,6 +116,79 @@ class _PerfilTabState extends State<PerfilTab> {
             ),
           );
         },
+    );
+  }
+}
+
+class _RolActual extends StatelessWidget {
+  final AppRole role;
+  const _RolActual({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: AppColors.royal.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(12)),
+            child: Icon(role.icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Modo ${role.label.toLowerCase()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(role.tagline, style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 12.5)),
+              ],
+            ),
+          ),
+          const Icon(Icons.verified_rounded, color: AppColors.sky),
+        ],
+      ),
+    );
+  }
+}
+
+class _CambiarRol extends StatelessWidget {
+  final AppRole role;
+  const _CambiarRol({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    final otro = role.otro;
+    return SurfaceCard(
+      onTap: () async {
+        await RoleController.instance.set(otro);
+        if (context.mounted) showOk(context, 'Ahora estás en modo ${otro.label.toLowerCase()}.');
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [AppColors.royal, AppColors.sky], begin: Alignment.bottomLeft, end: Alignment.topRight),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(otro.icon, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cambiar a ${otro.label.toLowerCase()}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                const SizedBox(height: 2),
+                Text(otro.description, style: const TextStyle(color: AppColors.muted, fontSize: 13, height: 1.3)),
+              ],
+            ),
+          ),
+          const Icon(Icons.swap_horiz_rounded, color: AppColors.royal),
+        ],
       ),
     );
   }

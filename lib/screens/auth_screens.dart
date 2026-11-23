@@ -1,10 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:flutter/services.dart';
+
 import '../services/api.dart';
+import '../services/role.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
-import 'welcome_screen.dart';
+import '../widgets/immersive.dart';
+import '../widgets/role_selector.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pass = TextEditingController();
   bool _busy = false;
   bool _hide = true;
+  AppRole _role = RoleController.instance.value ?? AppRole.remitente;
 
   @override
   void dispose() {
@@ -31,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_form.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
+      await RoleController.instance.set(_role);
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: _email.text.trim(), password: _pass.text);
       if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (e) {
@@ -56,61 +62,58 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: lapAppBar(''),
-      body: SafeArea(
-        child: Form(
-          key: _form,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            children: [
-              const LapticonLogo(),
-              const SizedBox(height: 28),
-              const Text('Hola de nuevo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.navy)),
-              const SizedBox(height: 6),
-              const Text('Inicia sesión para ver tus envíos y chats.', style: TextStyle(color: AppColors.muted, fontSize: 15)),
-              const SizedBox(height: 28),
-              TextFormField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                textInputAction: TextInputAction.next,
-                decoration: fieldDeco('Correo electrónico', icon: Icons.alternate_email),
-                validator: (v) => (v ?? '').contains('@') ? null : 'Escribe un correo válido',
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _pass,
-                obscureText: _hide,
-                autofillHints: const [AutofillHints.password],
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _login(),
-                decoration: fieldDeco(
-                  'Contraseña',
-                  icon: Icons.lock_outline,
-                  suffix: IconButton(
-                    tooltip: _hide ? 'Mostrar contraseña' : 'Ocultar contraseña',
-                    icon: Icon(_hide ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                    onPressed: () => setState(() => _hide = !_hide),
-                  ),
-                ),
-                validator: (v) => (v ?? '').length >= 6 ? null : 'Mínimo 6 caracteres',
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(onPressed: _reset, child: const Text('¿Olvidaste tu contraseña?')),
-              ),
-              const SizedBox(height: 8),
-              PrimaryButton(label: 'Entrar', icon: Icons.login_rounded, busy: _busy, onPressed: _login),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                  child: const Text('¿No tienes cuenta? Crea una'),
+    return AuthScaffold(
+      title: 'Hola de nuevo',
+      subtitle: 'Elige cómo entras hoy e inicia sesión.',
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AuthLabel('Entrar como'),
+            RoleSelector(value: _role, onChanged: (r) => setState(() => _role = r)),
+            const SizedBox(height: 22),
+            const AuthLabel('Tu cuenta'),
+            TextFormField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              textInputAction: TextInputAction.next,
+              decoration: fieldDeco('Correo electrónico', icon: Icons.alternate_email),
+              validator: (v) => (v ?? '').contains('@') ? null : 'Escribe un correo válido',
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _pass,
+              obscureText: _hide,
+              autofillHints: const [AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _login(),
+              decoration: fieldDeco(
+                'Contraseña',
+                icon: Icons.lock_outline,
+                suffix: IconButton(
+                  tooltip: _hide ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                  icon: Icon(_hide ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                  onPressed: () => setState(() => _hide = !_hide),
                 ),
               ),
-            ],
-          ),
+              validator: (v) => (v ?? '').length >= 6 ? null : 'Mínimo 6 caracteres',
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(onPressed: _reset, child: const Text('¿Olvidaste tu contraseña?')),
+            ),
+            const SizedBox(height: 6),
+            PrimaryButton(label: 'Entrar como ${_role.label.toLowerCase()}', icon: _role.icon, busy: _busy, onPressed: _login),
+            const SizedBox(height: 14),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                child: const Text('¿No tienes cuenta? Crea una'),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -134,6 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pass = TextEditingController();
   bool _busy = false;
   bool _hide = true;
+  AppRole _role = RoleController.instance.value ?? AppRole.remitente;
 
   @override
   void dispose() {
@@ -147,6 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_form.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
+      await RoleController.instance.set(_role);
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _email.text.trim(), password: _pass.text);
       final nombreCompleto = '${_nombre.text.trim()} ${_apellido.text.trim()}';
       await cred.user?.updateDisplayName(nombreCompleto);
@@ -183,19 +188,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     String? req(String? v) => (v ?? '').trim().length >= 2 ? null : 'Campo obligatorio';
-    return Scaffold(
-      appBar: lapAppBar('Crear cuenta'),
-      body: SafeArea(
-        child: Form(
+    return AuthScaffold(
+      title: 'Crea tu cuenta',
+      subtitle: 'Una sola cuenta para enviar y para viajar. Elige con cuál empiezas.',
+      child: Form(
           key: _form,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Con una sola cuenta puedes enviar encargos y también llevarlos en tus vuelos.',
-                style: TextStyle(color: AppColors.muted, fontSize: 15, height: 1.4),
-              ),
+              const AuthLabel('Quiero empezar como'),
+              RoleSelector(value: _role, onChanged: (r) => setState(() => _role = r)),
+              const SizedBox(height: 10),
+              Text(_role.description, style: const TextStyle(color: AppColors.muted, fontSize: 13, height: 1.35)),
               const SizedBox(height: 22),
+              const AuthLabel('Tus datos'),
               Row(
                 children: [
                   Expanded(
@@ -266,7 +272,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 validator: (v) => (v ?? '').length >= 6 ? null : 'Mínimo 6 caracteres',
               ),
               const SizedBox(height: 24),
-              PrimaryButton(label: 'Crear cuenta', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _register),
+              PrimaryButton(label: 'Crear cuenta de ${_role.label.toLowerCase()}', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _register),
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
@@ -276,8 +282,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ],
           ),
+      ),
+    );
+  }
+}
+
+/// Cabecera inmersiva + hoja clara con el formulario.
+class AuthScaffold extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget child;
+  const AuthScaffold({super.key, required this.title, required this.subtitle, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = MediaQuery.paddingOf(context);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.mist,
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            SkyBackdrop(
+              seed: 6,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(12, pad.top + 4, 24, 58),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      tooltip: 'Volver',
+                      onPressed: () => Navigator.maybePop(context),
+                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.6)),
+                          const SizedBox(height: 8),
+                          Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.68), fontSize: 15, height: 1.4)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              transform: Matrix4.translationValues(0, -28, 0),
+              decoration: const BoxDecoration(
+                color: AppColors.mist,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              padding: EdgeInsets.fromLTRB(20, 26, 20, 24 + pad.bottom),
+              child: child,
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class AuthLabel extends StatelessWidget {
+  final String text;
+  const AuthLabel(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 10),
+      child: Text(text.toUpperCase(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 1.3, color: AppColors.muted)),
     );
   }
 }

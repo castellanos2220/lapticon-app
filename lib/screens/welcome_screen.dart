@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme.dart';
+import '../widgets/immersive.dart';
 import 'auth_screens.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -8,77 +12,113 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.navy, Color(0xFF12294D)],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const LapticonLogo(light: true),
-                const Spacer(),
-                const _HeroIllustration(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Envía con viajeros\nque ya van para allá.',
-                  style: TextStyle(color: Colors.white, fontSize: 32, height: 1.12, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Publica tu encargo y el precio que pagas. Solo lo ven viajeros con un vuelo en tu ruta y a tiempo. Cuando hagan match, conversan por chat.',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontSize: 15, height: 1.45),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.navy,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.ink,
+        body: SkyBackdrop(
+          seed: 5,
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const LapticonLogo(light: true),
+                          const Spacer(),
+                          const _AnimatedRoute(),
+                          const SizedBox(height: 28),
+                          const Text(
+                            'Envía con viajeros\nque ya van para allá.',
+                            style: TextStyle(color: Colors.white, fontSize: 34, height: 1.1, fontWeight: FontWeight.w800, letterSpacing: -1),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Publica tu encargo o registra tu vuelo. Te conectamos solo con personas en tu misma ruta y a tiempo.',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 15.5, height: 1.45),
+                          ),
+                          const SizedBox(height: 20),
+                          const Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _Feature(Icons.verified_user_outlined, 'Match verificado'),
+                              _Feature(Icons.chat_bubble_outline_rounded, 'Chat en tiempo real'),
+                              _Feature(Icons.route_outlined, 'Misma ruta'),
+                            ],
+                          ),
+                          const Spacer(),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppColors.navy,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                              ),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                              child: const Text('Crear cuenta'),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                                side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+                              child: const Text('Ya tengo cuenta'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                    child: const Text('Crear cuenta'),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                    child: const Text('Ya tengo cuenta'),
-                  ),
-                ),
-              ],
-            ),
                   ),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Feature extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Feature(this.icon, this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.sky),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
@@ -95,92 +135,141 @@ class LapticonLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(color: light ? Colors.white : AppColors.navy, borderRadius: BorderRadius.circular(11)),
-          child: Icon(Icons.flight_takeoff_rounded, color: light ? AppColors.navy : AppColors.sky, size: 22),
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [AppColors.royal, AppColors.sky], begin: Alignment.bottomLeft, end: Alignment.topRight),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: AppColors.royal.withValues(alpha: 0.4), blurRadius: 14, offset: const Offset(0, 6))],
+          ),
+          child: const Icon(Icons.flight_takeoff_rounded, color: Colors.white, size: 22),
         ),
         const SizedBox(width: 10),
-        Text('Lapticon', style: TextStyle(color: fg, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
+        Text('Lapticon', style: TextStyle(color: fg, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
       ],
     );
   }
 }
 
-/// Ilustración: ruta punteada con un avión llevando una caja.
-class _HeroIllustration extends StatelessWidget {
-  const _HeroIllustration();
+/// Ruta BOG → MAD con un avión que la recorre en bucle.
+class _AnimatedRoute extends StatefulWidget {
+  const _AnimatedRoute();
+
+  @override
+  State<_AnimatedRoute> createState() => _AnimatedRouteState();
+}
+
+class _AnimatedRouteState extends State<_AnimatedRoute> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 150,
+      height: 170,
       width: double.infinity,
-      child: CustomPaint(
-        painter: _RoutePainter(),
-        child: Stack(
-          children: [
-            const Positioned(left: 0, bottom: 4, child: _CityDot(label: 'BOG')),
-            const Positioned(right: 0, top: 4, child: _CityDot(label: 'MAD')),
-            Align(
-              alignment: const Alignment(0.05, -0.15),
-              child: Transform.rotate(
-                angle: -0.35,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.flight_rounded, color: Colors.white, size: 46),
-                    Container(
-                      width: 18,
-                      height: 16,
-                      decoration: BoxDecoration(color: AppColors.kraft, borderRadius: BorderRadius.circular(3)),
-                      child: Center(child: Container(width: 18, height: 3, color: AppColors.sky)),
-                    ),
-                  ],
-                ),
-              ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (context, _) => CustomPaint(painter: _RoutePainter(Curves.easeInOut.transform(_c.value))),
             ),
-          ],
-        ),
+          ),
+          const Positioned(left: 0, bottom: 0, child: _CityTag(code: 'BOG', city: 'Bogotá')),
+          const Positioned(right: 0, top: 0, child: _CityTag(code: 'MAD', city: 'Madrid', alignEnd: true)),
+        ],
       ),
     );
   }
 }
 
-class _CityDot extends StatelessWidget {
-  final String label;
-  const _CityDot({required this.label});
+class _CityTag extends StatelessWidget {
+  final String code;
+  final String city;
+  final bool alignEnd;
+  const _CityTag({required this.code, required this.city, this.alignEnd = false});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white24)),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontFamily: 'monospace')),
+    return GlassPanel(
+      radius: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Text(code, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 17)),
+          Text(city, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
+        ],
+      ),
     );
   }
 }
 
 class _RoutePainter extends CustomPainter {
+  final double t;
+  _RoutePainter(this.t);
+
   @override
   void paint(Canvas canvas, Size size) {
+    final start = Offset(36, size.height - 52);
+    final end = Offset(size.width - 36, 52);
+    final ctrl = Offset(size.width * 0.42, -size.height * 0.15);
     final path = Path()
-      ..moveTo(30, size.height - 20)
-      ..quadraticBezierTo(size.width * 0.45, -size.height * 0.25, size.width - 30, 24);
-    final paint = Paint()
-      ..color = AppColors.sky.withValues(alpha: 0.7)
+      ..moveTo(start.dx, start.dy)
+      ..quadraticBezierTo(ctrl.dx, ctrl.dy, end.dx, end.dy);
+
+    final metric = path.computeMetrics().first;
+    final dash = Paint()
+      ..color = Colors.white.withValues(alpha: 0.22)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        canvas.drawPath(metric.extractPath(d, d + 7), paint);
-        d += 15;
-      }
+    var d = 0.0;
+    while (d < metric.length) {
+      canvas.drawPath(metric.extractPath(d, d + 6), dash);
+      d += 13;
+    }
+
+    // Estela recorrida
+    final traveled = metric.extractPath(0, metric.length * t);
+    canvas.drawPath(
+      traveled,
+      Paint()
+        ..shader = const LinearGradient(colors: [Color(0x005FB3FF), AppColors.sky]).createShader(Offset.zero & size)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.6
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Puntos de ciudad
+    for (final p in [start, end]) {
+      canvas.drawCircle(p, 9, Paint()..color = AppColors.sky.withValues(alpha: 0.2));
+      canvas.drawCircle(p, 4.5, Paint()..color = AppColors.sky);
+    }
+
+    // Avión
+    final tan = metric.getTangentForOffset(metric.length * t);
+    if (tan != null) {
+      canvas.drawCircle(tan.position, 22, Paint()..color = AppColors.royal.withValues(alpha: 0.25));
+      canvas.save();
+      canvas.translate(tan.position.dx, tan.position.dy);
+      canvas.rotate(-tan.angle + math.pi / 2);
+      final icon = Icons.flight_rounded;
+      final tp = TextPainter(
+        text: TextSpan(text: String.fromCharCode(icon.codePoint), style: TextStyle(fontSize: 30, fontFamily: icon.fontFamily, package: icon.fontPackage, color: Colors.white)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      canvas.restore();
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _RoutePainter old) => old.t != t;
 }

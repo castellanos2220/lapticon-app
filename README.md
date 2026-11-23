@@ -2,6 +2,7 @@
 
 App para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
 
+- **Roles:** al iniciar sesión o crear la cuenta se elige **Remitente** o **Viajero**. La app muestra solo las pestañas de ese rol (Envíos o Viajar, más Chats y Perfil). El rol se recuerda en el teléfono y se cambia desde *Perfil*.
 - **Envíos (remitente):** asistente de 3 pasos.
   1. Ruta y fecha límite.
   2. Qué envías: categoría, descripción, tamaño y peso.
@@ -9,6 +10,7 @@ App para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
 - **Viajar (viajero):** registra su vuelo y ve **solo** los encargos compatibles: misma ciudad de origen y destino, y vuelo entre hoy y la fecha límite.
 - **Match:** el viajero toca *Me interesa* y el remitente lo acepta. Al aceptarlo se descarta al resto de interesados.
 - **Chat:** se habilita únicamente con match. Funciona en tiempo real, con indicador de no leídos, separadores por día y sugerencias de primer mensaje.
+- **Datos de ejemplo:** mientras no hay envíos, encargos o chats reales, la app muestra ejemplos marcados como **EJEMPLO** (`lib/demo.dart`). Nunca se guardan en Firestore ni en el backend, y desaparecen en cuanto hay datos reales.
 
 ## Arquitectura
 
@@ -25,6 +27,8 @@ La app manda el *ID token* de Firebase como `Bearer` en cada petición al backen
 - Flutter (Dart `^3.8.0`), Material 3, interfaz en español (`flutter_localizations`, `intl`)
 - `firebase_core`, `firebase_auth`, `cloud_firestore`
 - `http` para el backend REST
+- `shared_preferences` para recordar el rol elegido
+- Tipografía Plus Jakarta Sans incluida en `assets/fonts` (licencia OFL), sin descargas en tiempo de ejecución
 - Android: `applicationId = com.lapticon.app`, `minSdk 24`, Kotlin 2.3.0, NDK 27.0.12077973
 
 ---
@@ -97,6 +101,8 @@ En https://console.firebase.google.com, proyecto **lapticon-eba31**:
    ```
    > ⚠️ Esto **reemplaza** las reglas de la base `(default)`. Si otra app del proyecto ya usa Firestore, combina antes sus reglas con `firebase/firestore.rules`.
 
+   La app **no necesita índices compuestos**: las listas de envíos y de matches se ordenan en el teléfono. Así se evita el error *"falta un índice"* (`failed-precondition`) aunque los índices no estén desplegados. `firestore.indexes.json` se conserva por si más adelante se ordena en el servidor.
+
 ---
 
 ## Cómo probar el flujo completo
@@ -119,16 +125,18 @@ Caso negativo: con un vuelo **después** de la fecha límite, o con otra ciudad 
 lib/
 ├── main.dart                     inicio, Firebase, idioma español, sesión persistente
 ├── config.dart                   URL del backend y base de Firestore
-├── theme.dart                    colores y estilos
+├── theme.dart                    colores, tipografía y estilos
 ├── format.dart                   fechas, dinero, kg
 ├── models.dart                   Viaje, Encargo, MatchDoc, Mensaje
 ├── matching.dart                 reglas de compatibilidad vuelo ↔ encargo
+├── demo.dart                     datos de ejemplo (solo se muestran, nunca se guardan)
 ├── services/
 │   ├── api.dart                  backend Render (token de Firebase en cada petición)
 │   ├── store.dart                Firestore: encargos, matches (transacción al aceptar), chat
 │   ├── ofertas.dart              encargos compatibles con el vuelo del viajero
-│   └── matches_controller.dart   matches en tiempo real (contadores y chats)
-├── widgets/                      componentes reutilizables y buscador de ciudades
+│   ├── matches_controller.dart   matches en tiempo real (contadores y chats)
+│   └── role.dart                 rol activo (remitente / viajero), guardado en el teléfono
+├── widgets/                      componentes reutilizables, cabeceras inmersivas, selector de rol, vistas de ejemplo
 └── screens/                      bienvenida, login/registro, envíos, viajar, chat, perfil
 firebase/firestore.rules          seguridad en el servidor (chat solo con match)
 firebase/firestore.indexes.json   índices de Firestore

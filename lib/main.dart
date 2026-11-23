@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import 'screens/home_shell.dart';
 import 'screens/welcome_screen.dart';
+import 'services/role.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -16,6 +17,7 @@ Future<void> main() async {
   await Firebase.initializeApp();
   await initializeDateFormatting('es');
   Intl.defaultLocale = 'es';
+  await RoleController.instance.load();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
   runApp(const LapticonApp());
 }
@@ -52,7 +54,7 @@ class AuthGate extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: AppColors.navy,
+            backgroundColor: AppColors.ink,
             body: Center(child: CircularProgressIndicator(color: AppColors.sky)),
           );
         }

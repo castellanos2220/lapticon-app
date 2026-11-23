@@ -1,61 +1,69 @@
 import 'package:flutter/material.dart';
 
+import '../demo.dart';
 import '../format.dart';
 import '../models.dart';
 import '../services/matches_controller.dart';
+import '../services/role.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/demo_views.dart';
+import '../widgets/immersive.dart';
 import 'chat_screen.dart';
 import 'encargo_detail_screen.dart';
 
 /// Conversaciones activas (match) y solicitudes en espera.
 class ChatsTab extends StatelessWidget {
-  final VoidCallback onIrAEnvios;
-  final VoidCallback onIrAViajar;
-  const ChatsTab({super.key, required this.onIrAEnvios, required this.onIrAViajar});
+  final AppRole role;
+  final VoidCallback onIrAInicio;
+  const ChatsTab({super.key, required this.role, required this.onIrAInicio});
 
   @override
   Widget build(BuildContext context) {
     final ctrl = MatchesController.instance;
-    return Scaffold(
-      appBar: lapAppBar('Chats'),
-      body: ListenableBuilder(
-        listenable: ctrl,
-        builder: (context, _) {
-          if (ctrl.error != null && ctrl.items.isEmpty) {
-            return ErrorView(error: ctrl.error!, onRetry: ctrl.retry);
-          }
-          if (ctrl.loading) return const LoadingView(message: 'Cargando chats…');
-          final uid = LapticonStore.instance.uid;
-          final chats = ctrl.items.where((m) => m.esMatch).toList();
-          final porResponder = ctrl.items.where((m) => m.pendiente && m.senderId == uid).toList();
-          final esperando = ctrl.items.where((m) => m.pendiente && m.travelerId == uid).toList();
+    return ListenableBuilder(
+      listenable: ctrl,
+      builder: (context, _) {
+        final uid = LapticonStore.instance.uid;
+        final chats = ctrl.items.where((m) => m.esMatch).toList();
+        final porResponder = ctrl.items.where((m) => m.pendiente && m.senderId == uid).toList();
+        final esperando = ctrl.items.where((m) => m.pendiente && m.travelerId == uid).toList();
+        final unread = ctrl.noLeidos(uid);
+        final vacio = !ctrl.loading && chats.isEmpty && porResponder.isEmpty && esperando.isEmpty;
 
-          if (chats.isEmpty && porResponder.isEmpty && esperando.isEmpty) {
-            return Center(
-              child: SingleChildScrollView(
-                child: EmptyState(
-                  icon: Icons.forum_outlined,
-                  title: 'Aún no tienes chats',
-                  message: 'El chat se abre cuando un remitente y un viajero hacen match. Publica un envío o registra tu vuelo para empezar.',
-                  action: Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      FilledButton.icon(onPressed: onIrAEnvios, icon: const Icon(Icons.inventory_2_outlined), label: const Text('Enviar algo')),
-                      OutlinedButton.icon(onPressed: onIrAViajar, icon: const Icon(Icons.flight_takeoff), label: const Text('Tengo un vuelo')),
-                    ],
-                  ),
-                ),
+        return ImmersivePage(
+          onRefresh: () async => ctrl.retry(),
+          contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          header: HeroHeader(
+            eyebrow: 'Mensajes',
+            title: 'Chats',
+            subtitle: unread > 0
+                ? 'Tienes $unread ${unread == 1 ? 'conversación' : 'conversaciones'} con mensajes nuevos.'
+                : 'Coordina la entrega con quien hiciste match.',
+            seed: 4,
+            child: HeroStats([
+              ('${chats.length}', 'Conversaciones'),
+              ('${porResponder.length + esperando.length}', 'Solicitudes'),
+              ('$unread', 'Sin leer'),
+            ]),
+          ),
+          children: [
+            if (ctrl.error != null && ctrl.items.isEmpty)
+              ErrorView(error: ctrl.error!, onRetry: ctrl.retry)
+            else if (ctrl.loading)
+              const Padding(padding: EdgeInsets.only(top: 40), child: LoadingView(message: 'Cargando chats…'))
+            else if (vacio) ...[
+              const DemoSectionNote('Aún no tienes chats. El chat se abre cuando un remitente y un viajero hacen match. Así se ven:'),
+              const SectionTitle('Conversaciones'),
+              for (final c in demoChats) ...[_DemoChatTile(chat: c), const SizedBox(height: 10)],
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: onIrAInicio,
+                icon: Icon(role == AppRole.remitente ? Icons.inventory_2_outlined : Icons.flight_takeoff),
+                label: Text(role == AppRole.remitente ? 'Publicar un envío' : 'Buscar encargos para mi vuelo'),
               ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            children: [
+            ] else ...[
               if (porResponder.isNotEmpty) ...[
                 const SectionTitle('Viajeros esperando tu respuesta'),
                 for (final m in porResponder) ...[
@@ -65,12 +73,12 @@ class ChatsTab extends StatelessWidget {
                     accion: 'Revisar',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EncargoDetailScreen(encargoId: m.encargoId))),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                 ],
               ],
               if (chats.isNotEmpty) ...[
                 const SectionTitle('Conversaciones'),
-                for (final m in chats) ...[_ChatTile(match: m, uid: uid), const SizedBox(height: 8)],
+                for (final m in chats) ...[_ChatTile(match: m, uid: uid), const SizedBox(height: 10)],
               ],
               if (esperando.isNotEmpty) ...[
                 const SectionTitle('Esperando respuesta del remitente'),
@@ -81,12 +89,59 @@ class ChatsTab extends StatelessWidget {
                     accion: null,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(matchId: m.id))),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                 ],
               ],
             ],
-          );
-        },
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DemoChatTile extends StatelessWidget {
+  final DemoChat chat;
+  const _DemoChatTile({required this.chat});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = chat;
+    final last = c.mensajes.last;
+    return SurfaceCard(
+      padding: const EdgeInsets.all(14),
+      borderColor: c.noLeido ? AppColors.sky : AppColors.line,
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DemoChatScreen(chat: c))),
+      child: Row(
+        children: [
+          Avatar(c.nombre, size: 50, color: c.noLeido ? AppColors.sky : AppColors.muted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(child: Text(c.nombre, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+                    const SizedBox(width: 6),
+                    const DemoBadge(),
+                    const Spacer(),
+                    Text(last.hora, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text('${c.vuelo} · ${c.origen} → ${c.destino}', style: const TextStyle(fontSize: 12, color: AppColors.muted, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(
+                  '${last.mio ? 'Tú: ' : ''}${last.texto}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: c.noLeido ? AppColors.navy : AppColors.muted, fontWeight: c.noLeido ? FontWeight.w700 : FontWeight.w400),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
