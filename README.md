@@ -1,6 +1,6 @@
 # Lapticon — app Android (Flutter)
 
-App para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
+La siguiente App sirve para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
 
 - **Roles:** al iniciar sesión o crear la cuenta se elige **Remitente** o **Viajero**. La app muestra solo las pestañas de ese rol (Envíos o Viajar, más Chats y Perfil). El rol se recuerda en el teléfono y se cambia desde *Perfil*.
 - **Envíos (remitente):** asistente de 3 pasos.
