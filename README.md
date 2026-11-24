@@ -1,6 +1,6 @@
 # Lapticon — app Android (Flutter)
 
-App para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
+App que sirve para enviar encargos con viajeros que ya tienen un vuelo en la misma ruta.
 
 - **Roles:** al iniciar sesión o crear la cuenta se elige **Remitente** o **Viajero**. La app muestra solo las pestañas de ese rol (Envíos o Viajar, más Chats y Perfil). El rol se recuerda en el teléfono y se cambia desde *Perfil*.
 - **Envíos (remitente):** asistente de 3 pasos.
@@ -33,7 +33,7 @@ La app manda el *ID token* de Firebase como `Bearer` en cada petición al backen
 
 ---
 
-## Compilar el proyecto
+## Compilar el proyecto.
 
 ### Requisitos
 
@@ -99,7 +99,7 @@ En https://console.firebase.google.com, proyecto **lapticon-eba31**:
    firebase login
    firebase deploy --only firestore
    ```
-   > ⚠️ Esto **reemplaza** las reglas de la base `(default)`. Si otra app del proyecto ya usa Firestore, combina antes sus reglas con `firebase/firestore.rules`.
+   >  Esto **reemplaza** las reglas de la base `(default)`. Si otra app del proyecto ya usa Firestore, combina antes sus reglas con `firebase/firestore.rules`.
 
    La app **no necesita índices compuestos**: las listas de envíos y de matches se ordenan en el teléfono. Así se evita el error *"falta un índice"* (`failed-precondition`) aunque los índices no estén desplegados. `firestore.indexes.json` se conserva por si más adelante se ordena en el servidor.
 
